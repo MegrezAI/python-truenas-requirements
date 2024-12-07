@@ -47,3 +47,4 @@ override_dh_gencontrol:
 	dh_gencontrol -ppython3-s3transfer -- -v0.6.1
 	dh_gencontrol -ppython3-typing-extensions -- -v4.12.2
 	dh_gencontrol -ppython3-websocket -- -v1.6.1
+	dh_gencontrol -ppython3-pyqt-fluent-widgets -- -v1.7.2

@@ -11,13 +11,14 @@ import textwrap
 
 logger = logging.getLogger(__name__)
 
-EXTRA_COMMANDS = [
-]
+EXTRA_COMMANDS = []
 SKIP_NO_BINARY = {
     "aiohttp-rpc",  # PIP starts downloading `poetry` and other unrelated packages (and fails) if `--no-binary` is used
     "pydantic",
-    "pydantic-core",  # Debian bookworm has rustc 1.63.0 while this package requires 1.69 (via toml v0.8.10)
+    "pydantic-core",  # Debian bookworm has rustc 1.63.0 while this package requires 1.69 (via toml v0.8.10),
+    "PyQt-Fluent-Widgets",
 }
+
 PIP_TO_DEBIAN_MAPPING = {
     "attrs": "python3-attr",
     "beautifulsoup4": "python3-bs4",
@@ -41,12 +42,16 @@ def pip_to_debian(name):
 def generate_build():
     extra = "\n".join(EXTRA_COMMANDS)
     with open("build.sh", "w") as f:
-        f.write(textwrap.dedent(f"""\
+        f.write(
+            textwrap.dedent(
+                f"""\
             #!/bin/sh -ex
             virtualenv --python=python{PYTHON_VERSION} v
             {extra}
             v/bin/pip install -r requirements.txt
-        """))
+        """
+            )
+        )
 
 
 def generate_changelog():
@@ -54,18 +59,29 @@ def generate_changelog():
         changelog = f.read()
 
     try:
-        version = int(re.match(r"python3-truenas-requirements \(0\.0\.0-([0-9]+)\)", changelog).group(1)) + 1
+        version = (
+            int(
+                re.match(
+                    r"python3-truenas-requirements \(0\.0\.0-([0-9]+)\)", changelog
+                ).group(1)
+            )
+            + 1
+        )
     except AttributeError:
         version = 1
 
     with open("debian/changelog", "w") as f:
-        f.write(textwrap.dedent(f"""\
+        f.write(
+            textwrap.dedent(
+                f"""\
             python3-truenas-requirements (0.0.0-{version}) unstable; urgency=medium
             
               * Initial release (Closes: #1)
             
              -- Vladimir Vinogradenko <vladimirv@ixsystems.com>  {datetime.utcnow().strftime('%a,  %d %b %Y %H:%M:%S')} +0000
-        """))
+        """
+            )
+        )
 
 
 @dataclass
@@ -92,7 +108,8 @@ def list_requirements():
 
 
 def generate_control():
-    control = textwrap.dedent("""\
+    control = textwrap.dedent(
+        """\
         Source: python3-truenas-requirements
         Section: admin
         Priority: optional
@@ -100,7 +117,8 @@ def generate_control():
         Build-Depends: debhelper-compat (= 12), libffi-dev, python3-virtualenv
         Standards-Version: 4.4.0
         Homepage: https://truenas.com
-    """)
+    """
+    )
 
     for requirement in list_requirements():
         package_name = pip_to_debian(requirement.package)
@@ -110,9 +128,14 @@ def generate_control():
             binary = ""
         else:
             binary = "--no-binary :all:"
-        output = subprocess.run(f"v/bin/pip download {requirement.requirement} -c constraints.txt -c requirements.txt "
-                                f"-d /tmp {binary} -v",
-                                check=True, stdout=subprocess.PIPE, shell=True, text=True).stdout
+        output = subprocess.run(
+            f"v/bin/pip download {requirement.requirement} -c constraints.txt -c requirements.txt "
+            f"-d /tmp {binary} -v",
+            check=True,
+            stdout=subprocess.PIPE,
+            shell=True,
+            text=True,
+        ).stdout
         for dependency in re.findall(r"Collecting (.+)", output):
             expressions = dependency.split(",")
             if m := re.match("([0-9A-Za-z_-]+)([^0-9A-Za-z_-].+)$", expressions[0]):
@@ -122,35 +145,47 @@ def generate_control():
                 dependency = expressions[0]
                 expressions = []
 
-            expressions = list(map(
-                lambda e: (re.sub(r"([^0-9])([0-9])", "\\1 \\2", e, 1).replace("< ", "<< ").replace("> ", ">>").
-                           replace("~=", ">=").replace("==", "=")),
-                filter(lambda e: not e.startswith("!="), expressions),
-            ))
+            expressions = list(
+                map(
+                    lambda e: (
+                        re.sub(r"([^0-9])([0-9])", "\\1 \\2", e, 1)
+                        .replace("< ", "<< ")
+                        .replace("> ", ">>")
+                        .replace("~=", ">=")
+                        .replace("==", "=")
+                    ),
+                    filter(lambda e: not e.startswith("!="), expressions),
+                )
+            )
 
             dependency = pip_to_debian(dependency)
             if dependency != package_name:
                 if expressions:
-                    depends.extend([f"{dependency} ({expression})" for expression in expressions])
+                    depends.extend(
+                        [f"{dependency} ({expression})" for expression in expressions]
+                    )
                 else:
                     depends.append(dependency)
 
         depends.sort()
 
-        control += "\n" + textwrap.dedent(f"""\
+        control += "\n" + textwrap.dedent(
+            f"""\
             Package: {package_name}
             Architecture: amd64
             Depends: {', '.join(depends)}
             Description: {requirement.package.title()} for Python
              {requirement.package.title()} is a {requirement.package} library for Python.
-        """)
+        """
+        )
 
     with open("debian/control", "w") as f:
         f.write(control)
 
 
 def generate_rules():
-    rules = textwrap.dedent("""\
+    rules = textwrap.dedent(
+        """\
         #!/usr/bin/make -f
         export DH_VERBOSE = 1
         
@@ -162,7 +197,8 @@ def generate_rules():
 
         override_dh_gencontrol:
         	dh_gencontrol
-    """)
+    """
+    )
 
     for requirement in list_requirements():
         package_name = pip_to_debian(requirement.package)
@@ -180,7 +216,9 @@ def generate_install():
         package_name = pip_to_debian(requirement.package)
 
         files = []
-        with open(f"v/lib/python{PYTHON_VERSION}/site-packages/{requirement.distinfo}/RECORD") as f:
+        with open(
+            f"v/lib/python{PYTHON_VERSION}/site-packages/{requirement.distinfo}/RECORD"
+        ) as f:
             for line in f.read().strip().splitlines():
                 file = line.split(",")[0]
 
@@ -190,11 +228,23 @@ def generate_install():
                 files.append(file)
 
         with open(f"debian/{package_name}.install", "w") as f:
-            f.write("\n".join([
-                " ".join([os.path.normpath(f"v/lib/python{PYTHON_VERSION}/site-packages/{file}"),
-                          os.path.normpath(f"usr/lib/python3/dist-packages/{os.path.dirname(file)}")])
-                for file in files
-            ]))
+            f.write(
+                "\n".join(
+                    [
+                        " ".join(
+                            [
+                                os.path.normpath(
+                                    f"v/lib/python{PYTHON_VERSION}/site-packages/{file}"
+                                ),
+                                os.path.normpath(
+                                    f"usr/lib/python3/dist-packages/{os.path.dirname(file)}"
+                                ),
+                            ]
+                        )
+                        for file in files
+                    ]
+                )
+            )
 
 
 if __name__ == "__main__":
@@ -203,7 +253,9 @@ if __name__ == "__main__":
     if os.path.exists("v"):
         shutil.rmtree("v")
 
-    subprocess.run(f"virtualenv --python=python{PYTHON_VERSION} v", check=True, shell=True)
+    subprocess.run(
+        f"virtualenv --python=python{PYTHON_VERSION} v", check=True, shell=True
+    )
     for cmd in EXTRA_COMMANDS:
         subprocess.run(cmd, check=True, shell=True)
 

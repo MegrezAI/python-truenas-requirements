@@ -239,3 +239,9 @@ Architecture: amd64
 Depends:
 Description: Pyqt-Fluent-Widgets for Python
  Pyqt-Fluent-Widgets is a PyQt-Fluent-Widgets library for Python.
+
+Package: python3-darkdetect
+Architecture: amd64
+Depends: 
+Description: Darkdetect for Python
+ Darkdetect is a darkdetect library for Python.

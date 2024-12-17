@@ -17,6 +17,7 @@ SKIP_NO_BINARY = {
     "pydantic",
     "pydantic-core",  # Debian bookworm has rustc 1.63.0 while this package requires 1.69 (via toml v0.8.10),
     "PyQt-Fluent-Widgets",
+    "darkdetect",
 }
 
 PIP_TO_DEBIAN_MAPPING = {

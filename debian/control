@@ -236,6 +236,6 @@ Description: Websocket-Client for Python
 
 Package: python3-pyqt-fluent-widgets
 Architecture: amd64
-Depends: python3-cffi (>= 1.1.0), python3-darkdetect, python3-pycparser, python3-pyqt5 (>= 5.15.0), python3-pyqt5-frameless-window (>= 0.4.0), python3-pyqt5-qt5 (<< 5.16.0), python3-pyqt5-qt5 (>= 5.15.2), python3-pyqt5-sip (<< 13), python3-pyqt5-sip (>= 12.15), python3-xcffib
+Depends:
 Description: Pyqt-Fluent-Widgets for Python
  Pyqt-Fluent-Widgets is a PyQt-Fluent-Widgets library for Python.

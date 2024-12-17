@@ -245,3 +245,9 @@ Architecture: amd64
 Depends: 
 Description: Darkdetect for Python
  Darkdetect is a darkdetect library for Python.
+
+Package: python3-pyqt5-frameless-window
+Architecture: amd64
+Depends: 
+Description: Pyqt5-Frameless-Window for Python
+ Pyqt5-Frameless-Window is a PyQt5-Frameless-Window library for Python.

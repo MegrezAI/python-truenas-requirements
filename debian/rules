@@ -49,3 +49,4 @@ override_dh_gencontrol:
 	dh_gencontrol -ppython3-websocket -- -v1.6.1
 	dh_gencontrol -ppython3-pyqt-fluent-widgets -- -v1.7.2
 	dh_gencontrol -ppython3-darkdetect -- -v0.8.0
+	dh_gencontrol -ppython3-pyqt5-frameless-window -- -v0.4.3
